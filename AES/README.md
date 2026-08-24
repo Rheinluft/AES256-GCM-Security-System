@@ -214,6 +214,9 @@ AES/
 │   ├── tx_uvm/                TX UVM TB와 1280-packet golden handoff
 │   ├── rx_uvm/                RX 인증·5종 오류 UVM regression
 │   └── tx_rx_loopback/        TX 출력에서 RX 복호까지 loopback
+├── reference/
+│   └── original_aes256_gcm_core/
+│                              사용자 GitHub의 독립형 AES/GCM 코어와 검증
 └── assets/                    이 문서에 사용하는 구조·장비·데모 이미지
 ```
 
@@ -230,6 +233,22 @@ AES/
 | [`pc/dashboard`](pc/dashboard/README.md) | RX HDMI·UART와 Jetson 상태를 통합한 PC 콘솔 |
 | [`pc/preview`](pc/preview/README.md) | USB HDMI capture 단독 점검 도구 |
 | [`verification`](verification/README.md) | 암호 코어부터 TX/RX 종단까지의 검증 계층 |
+| [`reference/original_aes256_gcm_core`](reference/original_aes256_gcm_core/README.md) | 사용자 GitHub에서 가져온 독립형 AES-256-GCM RTL과 원본 검증 결과 |
+
+### 통합 코어와 사용자 원본 코어
+
+두 구현은 같은 AES-256-GCM을 수행하지만 용도와 구조가 다릅니다. `fpga/tx`와
+`fpga/rx` 아래의 코어가 최종 영상 시스템의 실제 합성 경로이며, `reference`의
+코어는 사용자 개인 설계 계보와 검증 근거를 보존하는 독립형 참고 구현입니다.
+
+| 구분 | 최종 통합 구현 | 사용자 원본 독립형 구현 |
+|---|---|---|
+| 위치 | `fpga/tx`, `fpga/rx` | `reference/original_aes256_gcm_core` |
+| AES 구조 | 외부 key expansion + `aes256_iterative_core` | round-key cache를 포함한 `aes256_core` |
+| GCM 결합 | 영상 packet/AXI stream 전용 TX·RX top | command 및 128-bit `valid/ready` GCM engine |
+| 인증 전 평문 | RX packet BRAM에서 판정 후 commit | `authenticated_packet_buffer`에서 격리 |
+| 빌드 관계 | 최종 TX/RX bitstream 대상 | 최종 bitstream에는 자동 포함되지 않는 참고 코어 |
+| 원본 | 팀 통합 소스 | `Bourrasque-21/aes256-gcm-occ` commit `925efa0` |
 
 ## 실행 개요
 
@@ -284,6 +303,7 @@ run_pc_ui.bat
 | 계층 | 검증 내용 | 정리 시 확인 결과 |
 |---|---|---|
 | AES-256 core | NIST AESAVS ECB-256 KAT, xsim/VCS | 405/405, 0 fail |
+| 사용자 원본 standalone core | NIST KAT 및 GCM TX/RX 정상·TAG 변조·평문 격리 | AES 405/405, GCM engine PASS |
 | C ↔ RTL | OpenSSL golden 기반 10,000개 AES-256 block | C 10,000/10,000, RTL 10,000/10,000 일치 |
 | TX UVM | ciphertext/AAD/TAG, AXI backpressure, 1280 packets | mismatch 0, protocol error 0 |
 | RX UVM | 정상·TAG/Cipher tamper·replay·sequence·session·timeout·backpressure | regression PASS |
