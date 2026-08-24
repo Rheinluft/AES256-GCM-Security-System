@@ -88,6 +88,14 @@ Session control plane
 
 정상 영상만 보여주는 화면이 아니라, 현재 session·frame 상태, Jetson 공격 단계, RX의 5종 detector와 최근 이벤트를 함께 표시합니다. 변조·재전송·약한 키 탐색·VLM 화면과 내부 데이터 흐름은 [AES 설계 문서](AES/README.md#데모-화면)에서 이어집니다.
 
+| 인증·복호화된 정상 영상 | 복호화하지 않은 암호문 영상 |
+|---|---|
+| ![RX에서 정상 복호화된 평문 영상](AES/assets/rx_decryption_enabled.gif) | ![암호문이 컬러 노이즈로 표시되는 비교 화면](AES/assets/rx_decryption_disabled_noise.gif) |
+
+복호화를 거치면 원본 장면이 복원되지만, 암호화된 frame data를 그대로 표시하면
+오른쪽처럼 시각적 구조를 식별할 수 없는 노이즈가 됩니다. 인증 실패 packet은
+이 비교 화면과 달리 RX에서 zero payload로 차단됩니다.
+
 ## 저장소 구조
 
 ```text

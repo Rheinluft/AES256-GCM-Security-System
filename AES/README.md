@@ -151,6 +151,18 @@ TX는 Pcam과 연결되고 RX는 HDMI capture board 및 UART로 PC에 연결됩�
 
 ## 데모 화면
 
+### 복호화 전후 영상 비교
+
+| RX 복호화 활성 — 정상 평문 | RX 복호화 비활성 — 암호문 노이즈 |
+|---|---|
+| ![RX에서 AES-256-GCM 복호화한 정상 평문 영상](assets/rx_decryption_enabled.gif) | ![복호화하지 않은 암호화 영상 데이터가 컬러 노이즈로 표시되는 화면](assets/rx_decryption_disabled_noise.gif) |
+
+왼쪽은 RX가 인증·복호화한 뒤 복원한 영상이고, 오른쪽은 비교를 위해 복호화를
+끄고 암호화된 frame data를 영상으로 표시한 결과입니다. 암호문에서는 사람이나
+배경의 시각적 구조를 알아볼 수 없습니다. 오른쪽 화면은 TAG 인증 실패 동작을
+뜻하지 않으며, 최종 secure RX는 인증에 실패한 packet을 노이즈로 출력하지 않고
+payload 전체를 0으로 치환합니다.
+
 ### 정상 수신과 이벤트 기록
 
 ![RX HDMI 영상과 보안 상태를 함께 표시하는 PC 수신 콘솔](assets/pc_receiver.png)
