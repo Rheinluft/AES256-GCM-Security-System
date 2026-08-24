@@ -5,11 +5,9 @@ AES-256-GCM 암호 연산 RTL입니다. `gcm_tx_engine`과 `gcm_rx_engine`은 �
 128비트 블록 단위 `valid/ready` 인터페이스를 사용하므로 AXI4-Stream, DMA,
 네트워크 packetizer 등 필요한 상위 계층에 연결할 수 있습니다.
 
-> 이 디렉터리는 사용자 GitHub
-> [`Bourrasque-21/aes256-gcm-occ`](https://github.com/Bourrasque-21/aes256-gcm-occ)의
-> `AES256_GCM_Core`를 `main` commit `925efa0` 기준으로 보존한 참고 구현입니다.
-> 현재 영상 시스템이 합성하는 `AES/fpga/tx`·`AES/fpga/rx` 코어와는 별도이며,
-> 최종 bitstream 빌드에 자동으로 포함되지 않습니다.
+> 이 디렉터리는 플랫폼 결합을 제외한 독립형 참고 구현입니다. 현재 영상
+> 시스템이 합성하는 `AES/fpga/tx`·`AES/fpga/rx` 코어와는 별도이며, 최종
+> bitstream 빌드에 자동으로 포함되지 않습니다.
 
 ## 구성
 
@@ -296,7 +294,7 @@ NR03 대비 현재 코어의 routed WNS는 TX `+0.120 ns`, RX `+0.318 ns`
 증가했습니다. 자원은 TX에서 LUT 106개와 register 257개, RX에서 LUT 93개와
 register 256개 증가했습니다. 이는 키 확장 경로 분리, round-key 선등록 및
 payload 경계 판정 등록에 추가 register와 제어 논리를 사용하는 구조에
-해당합니다. 현재 GitHub RTL은 NR04와 합성 netlist, timing 및 자원량이
+해당합니다. 현재 RTL은 NR04와 합성 netlist, timing 및 자원량이
 동일하므로 별도 코어 버전으로 구분하지 않습니다.
 
 ## 검증 항목 및 결과
@@ -401,4 +399,3 @@ VCS/Verdi로 수행했던 기존 AES-256 KAT 테스트벤치와 결과 화면도
 
 - [AES 보안 영상 시스템 설계](../../README.md)
 - [통합 구현 검증 구성](../../verification/README.md)
-- [원본 GitHub 저장소](https://github.com/Bourrasque-21/aes256-gcm-occ)

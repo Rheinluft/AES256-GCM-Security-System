@@ -98,7 +98,7 @@ FPGA-AES256-GCM-Security-System/
 │   ├── jetson/            2-NIC bridge, 공격 엔진, 보안 대시보드와 VLM 연동
 │   ├── pc/                HDMI/UART 수신 콘솔과 경량 미리보기
 │   ├── verification/      NIST KAT, C/FPGA 비교, TX/RX UVM, loopback
-│   ├── reference/         사용자 원본 독립형 AES-256-GCM 코어와 검증 자료
+│   ├── reference/         독립형 AES-256-GCM 참고 코어와 검증 자료
 │   └── assets/            구조도·장비·실제 데모 화면
 └── README.md              전체 설계와 통합 데모 진입점
 ```
@@ -110,12 +110,4 @@ FPGA-AES256-GCM-Security-System/
 3. AES의 신뢰 경계·packet·데모·실행은 [AES/README.md](AES/README.md)를 봅니다.
 4. FPGA·Jetson·PC 내부 구성은 각각 [`AES/fpga`](AES/fpga/README.md), [`AES/jetson`](AES/jetson/README.md), [`AES/pc`](AES/pc/README.md) 문서로 내려갑니다.
 5. 테스트가 실제로 만든 자극과 합격 조건은 [AES/verification/README.md](AES/verification/README.md)를 봅니다.
-6. 현재 통합 구현과 별도로 보존한 사용자 원본 코어는 [AES/reference/original_aes256_gcm_core](AES/reference/original_aes256_gcm_core/README.md)에서 확인합니다.
-
-## 저장소 정리 기준
-
-- 합성·빌드·실행에 필요한 소스와 설정, 테스트벤치와 골든 벡터를 우선 보존했습니다.
-- PPT에서는 전체 구조와 검증 요약 슬라이드만 PNG로 추출했고, 실제 데모 캡처는 설명과 직접 연결되는 화면만 사용했습니다.
-- AES 영역의 PDF/DOC/DOCX/PPTX, 압축본, Vivado·VCS 생성물, 실행 바이너리, 로컬 VLM 모델과 런타임은 제외했습니다.
-- PC별 환경 값은 실제 설정 파일 대신 예시 파일만 포함합니다.
-- 하위 구성요소의 기존 문서에는 개발 당시 장비 경로가 남아 있을 수 있으며, 저장소 구성과 설계 설명의 기준은 각 디렉터리 최상위 README입니다.
+6. 현재 통합 구현과 별도로 보존한 독립형 참고 코어는 [AES/reference/original_aes256_gcm_core](AES/reference/original_aes256_gcm_core/README.md)에서 확인합니다.

@@ -358,25 +358,3 @@ cd AES\pc\dashboard
 py -3 .\server.py --self-test
 node --test .\web\tests\*.test.js
 ```
-
-## 결과를 해석할 때의 제한
-
-- NIST KAT PASS는 AES block core 정답성을 의미하며 GCM protocol 전체를 대신하지 않습니다.
-- UVM PASS는 사용한 RTL과 scenario에 대한 결과이며 실제 board timing closure, cable 품질과 OS driver를 대신하지 않습니다.
-- 화면 테스트는 UI가 backend evidence를 정확히 표현하는지 확인하며 실제 packet 공격 성공을 대신하지 않습니다.
-- Weak-Key search 성공은 의도적으로 축소한 demo key space의 결과이며 AES-256 brute-force 가능성을 뜻하지 않습니다.
-- 실제 board 검증에서는 Vivado timing/DRC, JTAG/SD boot, 약 30 fps content와 RX detector/UART를 별도 확인해야 합니다.
-
-## 기준 소스와 중복 관리
-
-운영 FPGA 정본은 [`../fpga/tx/vivado/rtl`](../fpga/tx/vivado/rtl)과 [`../fpga/rx/vivado/rtl`](../fpga/rx/vivado/rtl)입니다. 검증 폴더의 RTL 복사본은 기존 filelist와 handoff를 그대로 재현하기 위해 유지합니다.
-
-새 기능을 수정할 때는 다음 순서를 따릅니다.
-
-1. 운영 RTL을 먼저 수정합니다.
-2. 관련 unit/UVM test와 golden 생성 절차를 갱신합니다.
-3. 검증 복사본의 SHA-256 동일성을 확인합니다.
-4. TX handoff를 다시 만든 뒤 RX/loopback regression을 실행합니다.
-5. 최종 결과 숫자와 README를 함께 갱신합니다.
-
-NIST KAT 소스는 기존 archive에서 `uvm_verification/`만 풀어 넣었고, simulator binary, coverage DB와 원시 log는 저장소에서 제외했습니다.
