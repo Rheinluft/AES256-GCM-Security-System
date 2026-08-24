@@ -110,12 +110,3 @@ AES256-GCM-Security-System/
 │   └── assets/            구조도·장비·실제 데모 화면
 └── README.md              전체 설계와 통합 데모 진입점
 ```
-
-## 문서 읽는 순서
-
-1. 전체 데모 목적과 두 프로젝트의 관계는 이 문서에서 확인합니다.
-2. OCC의 광학 조건·패킷·보드 조작은 [Rolling_Shutter_OCC/README.md](Rolling_Shutter_OCC/README.md)를 봅니다.
-3. AES의 신뢰 경계·packet·데모·실행은 [AES/README.md](AES/README.md)를 봅니다.
-4. FPGA·Jetson·PC 내부 구성은 각각 [`AES/fpga`](AES/fpga/README.md), [`AES/jetson`](AES/jetson/README.md), [`AES/pc`](AES/pc/README.md) 문서로 내려갑니다.
-5. 테스트가 실제로 만든 자극과 합격 조건은 [AES/verification/README.md](AES/verification/README.md)를 봅니다.
-6. 현재 통합 구현과 별도로 보존한 독립형 참고 코어는 [AES/reference/original_aes256_gcm_core](AES/reference/original_aes256_gcm_core/README.md)에서 확인합니다.
