@@ -158,6 +158,8 @@ packet마다 다음 세 그룹을 독립 비교하므로 full frame에서 총 3,
 
 Scoreboard는 packet 수뿐 아니라 byte mismatch 수를 별도로 집계합니다. 모든 그룹이 통과하고 UVM error/fatal이 0일 때만 RX handoff 파일을 생성합니다.
 
+![C/OpenSSL golden vector와 TX RTL 출력을 packet·byte 단위로 비교하는 UVM scoreboard 흐름](assets/tx_uvm_scoreboard_flow.png)
+
 ### Test cases
 
 | Test | 자극 | 추가 판정 |
@@ -172,6 +174,16 @@ Scoreboard는 packet 수뿐 아니라 byte mismatch 수를 별도로 집계합�
 - full-frame timeout과 DUT `protocol_error` 없음
 - output stall 중 `TVALID && !TREADY`인 beat의 값이 변하지 않음
 - busy 종료 뒤 frame/packet status가 다음 frame 경계와 일치
+
+### TX UVM 실행 결과 화면
+
+| Full-frame scoreboard | 독립 AXI backpressure |
+|---|---|
+| ![TX UVM에서 ciphertext AAD TAG 각각 1280 packet과 총 3840개 비교가 통과한 scoreboard](assets/tx_uvm_full_frame_scoreboard.png) | ![TX UVM에서 ciphertext와 metadata stall을 발생시키고 stability error 0을 확인한 결과](assets/tx_uvm_backpressure_summary.png) |
+
+Full-frame test는 ciphertext·AAD·TAG 각각 `1280/1280`, 총 `3840/3840` 비교와
+byte mismatch 0을 기록했습니다. Stall test는 ciphertext와 metadata 채널에 실제
+stall을 발생시킨 상태에서 두 채널의 stability error가 모두 0임을 확인했습니다.
 
 ### RX handoff 산출물
 
@@ -223,6 +235,13 @@ cd AES/verification/rx_uvm/sim
 ./run_regression.sh
 FULL=1 ./run_regression.sh
 ```
+
+![Synopsys URG에서 확인한 RX UVM error code와 flag functional coverage 100%](assets/rx_uvm_functional_coverage.png)
+
+이 화면의 100%는 RX 오류 검출 functional covergroup에 대한 결과입니다. 5종
+오류 code와 각 error flag가 모두 hit되어 64/64 bin을 채웠다는 뜻이며, FSM
+전이까지 전부 100%라는 의미는 아닙니다. 보고서의 FSM coverage는 별도 범위로
+관리합니다.
 
 개별 test는 다음 형식입니다.
 
