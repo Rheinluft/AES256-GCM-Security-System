@@ -99,7 +99,7 @@ Session control plane
 ## 저장소 구조
 
 ```text
-FPGA-AES256-GCM-Security-System/
+AES256-GCM-Security-System/
 ├── Rolling_Shutter_OCC/   Rolling-shutter 광통신 RTL, 보드 제약과 PC 도구
 ├── AES/
 │   ├── fpga/              Zybo TX/RX RTL, PetaLinux, 세션 제어, STM32
