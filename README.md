@@ -110,3 +110,15 @@ AES256-GCM-Security-System/
 │   └── assets/            구조도·장비·실제 데모 화면
 └── README.md              전체 설계와 통합 데모 진입점
 ```
+
+## 상세 문서 안내
+
+| 문서 | 확인할 수 있는 내용 |
+|---|---|
+| [Rolling-Shutter OCC](Rolling_Shutter_OCC/README.md) | 광학 원리, OOK·Manchester packet, 카메라 timing, Tag/Reader RTL과 보드 데모 |
+| [AES 보안 영상 시스템](AES/README.md) | 전체 신뢰 경계, 암호화 영상 경로, packet 계약, 공격 시나리오와 데모 화면 |
+| [FPGA](AES/fpga/README.md) | Zybo TX/RX PL datapath, PetaLinux 연결, session key 제어와 보드별 구성 |
+| [Jetson](AES/jetson/README.md) | 2-NIC bridge, packet 관찰, Tamper·Replay·Weak-Key 공격 엔진과 대시보드 |
+| [PC](AES/pc/README.md) | HDMI·UART·Jetson 상태를 결합하는 수신 콘솔과 이벤트 표시 방식 |
+| [Verification](AES/verification/README.md) | NIST KAT, C/RTL 비교, TX/RX UVM, loopback의 자극·판정 기준과 결과 화면 |
+| [Standalone AES-256-GCM Core](AES/reference/original_aes256_gcm_core/README.md) | 통합 영상 경로와 분리된 독립형 암호 코어 구조, 인터페이스와 단독 검증 결과 |
