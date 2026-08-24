@@ -1,4 +1,4 @@
-# Rheinluft
+# FPGA AES-256-GCM Security System
 
 FPGA 기반 광통신과 암호화 영상 전송을 함께 다루는 팀 통합 저장소입니다. 단순히 암호 알고리즘을 실행하는 데서 끝나지 않고, **물리 채널의 자격증명 전달 → FPGA 실시간 암호화 → 네트워크 중간 공격 → 수신단 차단과 가시화**까지 하나의 데모 흐름으로 구성했습니다.
 
@@ -91,7 +91,7 @@ Session control plane
 ## 저장소 구조
 
 ```text
-Rheinluft/
+FPGA-AES256-GCM-Security-System/
 ├── Rolling_Shutter_OCC/   Rolling-shutter 광통신 RTL, 보드 제약과 PC 도구
 ├── AES/
 │   ├── fpga/              Zybo TX/RX RTL, PetaLinux, 세션 제어, STM32
