@@ -2,6 +2,8 @@
 
 Pcam 영상이 DDR에 평문으로 기록되기 전에 Zybo TX의 PL에서 암호화되고, Jetson 중간 노드를 거쳐 Zybo RX에서 인증·복호화되는 종단간 영상 보안 데모입니다. Jetson은 정상 트래픽 관찰과 공격 시연을 담당하고, RX와 PC 콘솔은 공격 탐지 결과와 복호 영상을 보여줍니다.
 
+설계 바로가기: [최종 RTL 계층](#rtl-모듈-계층과-자원-역할) · [packet/AAD/nonce](#packet-aad와-nonce-구조) · [GCM 계산](#gcm-계산-문맥) · [TX 처리](#tx-처리-순서-평문이-ddr에-도달하기-전-암호화) · [RX 인증 후 방출](#rx-처리-순서-authenticate-before-release) · [독립형 코어와 비교](#통합-코어와-독립형-참고-코어)
+
 ## 설계 목표와 핵심 결정
 
 | 목표 | 설계 결정 | 이유 |
@@ -53,43 +55,117 @@ PC Receiver Console
 
 세션 키는 별도 Wi-Fi 제어 채널에서 X25519 static-static ECDH와 HKDF-SHA256으로 유도하고, 인증된 AES-GCM session capsule을 통해 TX/RX에 적용합니다. 영상 경로의 Jetson은 L2 bridge로 동작하므로 정상 모드에서는 암호화 패킷을 수정하지 않습니다.
 
-## 내부 설계
+## 최종 AES-256-GCM 상세 설계
 
-### TX: 평문이 DDR에 도달하기 전 암호화
+이 절은 현재 TX/RX에 통합된 RTL을 기준으로 암호 코어, packet 형식과 인증 실패 동작을 연결해 설명합니다. 공통 상수와 필드 조합은 [`gcm_protocol_pkg.sv`](fpga/tx/vivado/rtl/aes256_gcm/gcm_protocol_pkg.sv)에 정의되어 있습니다.
 
-```text
-Pcam MIPI
-  -> PL YUYV16 stream
-  -> axis_video16_to_frame128
-  -> axis_gcm_tx_frame_processor_v1
-       ├─ AAD = protocol/session/frame/packet metadata
-       ├─ CTR encryption
-       └─ GHASH authentication tag
-  -> axis_frame128_to_video16
-  -> Video Frame Buffer Write / DDR ciphertext
-  -> PS UDP sender
-```
-
-`video_aes_gcm_tx_top`은 AES-256 key expansion, counter mode encryption과 GHASH를 결합합니다. packet마다 16-byte AAD와 96-bit nonce 문맥을 만들고 1440-byte payload를 암호화합니다. ciphertext와 metadata 출력은 독립 AXI channel이므로 backpressure가 걸려도 `TVALID`가 유지되는 동안 data와 metadata가 바뀌지 않아야 합니다.
-
-### RX: authenticate-before-release
+### RTL 모듈 계층과 자원 역할
 
 ```text
-PS/DDR encrypted record
-  -> axis_gcm_rx_frame_processor_v2
-  -> video_aes_gcm_rx_top
-       ├─ AAD/header/session 검사
-       ├─ GHASH/TAG 재계산
-       ├─ replay/sequence/timeout 문맥
-       └─ 승인 packet만 plaintext commit
-  -> packet_buffer_bram
-  -> YUYV/RGB video path
-  -> HDMI
+TX axis_gcm_tx_frame_processor
+└─ video_aes_gcm_tx_top
+   ├─ aes256_key_expansion       : 256-bit key -> RK0 ... RK14
+   ├─ aes256_iterative_core × 2  : payload CTR / H·TAG mask 계산
+   └─ ghash_mul16                : AAD·ciphertext·length 인증 누산
+
+RX axis_gcm_rx_frame_processor
+├─ video_aes_gcm_rx_top
+│  ├─ aes256_key_expansion
+│  ├─ aes256_iterative_core × 2
+│  ├─ ghash_mul16
+│  └─ packet_buffer_bram         : 90-block packet bank × 2
+└─ gcm_rx_error_detector         : TAG/REPLAY/SEQUENCE/SESSION/TIMEOUT
 ```
 
-정상 packet은 golden plaintext와 일치해야 합니다. TAG나 header가 거부된 packet은 출력 길이를 유지하되 payload 전체를 0으로 치환합니다. 이 방식은 downstream video timing을 유지하면서 인증 실패 데이터가 평문처럼 노출되는 것을 막습니다.
+| 블록 | 구현 방식 | 최종 설계에서의 역할 |
+|---|---|---|
+| [`aes256_key_expansion`](fpga/tx/vivado/rtl/aes256_gcm/aes256_key_expansion.sv) | AES-256의 15개 round key `RK0`~`RK14`를 외부 확장 | data/auxiliary AES가 같은 session key schedule을 공유 |
+| [`aes256_iterative_core`](fpga/tx/vivado/rtl/aes256_gcm/aes256_iterative_core.sv) | 128-bit state에 한 clock당 한 round를 적용하는 14-round iterative core | data core는 CTR keystream, auxiliary core는 `H`와 `E_K(J0)` 계산 |
+| [`ghash_mul16`](fpga/tx/vivado/rtl/aes256_gcm/ghash_mul16.sv) | 8 multiplier bits/clock, 한 번의 GF(2¹²⁸) 곱셈에 16 clocks | AAD, 90개 ciphertext block과 length block을 순서대로 인증 |
+| [`packet_buffer_bram`](fpga/rx/vivado/rtl/aes256_gcm/packet_buffer_bram.sv) | 180 × 128-bit simple dual-port RAM | 90-block bank 두 개로 인증 중인 packet과 출력 packet을 분리 |
 
-`gcm_rx_error_detector`는 stream을 바꾸지 않는 입력 tap으로 다음 이벤트를 별도 sticky bit·counter·last context에 기록합니다.
+키가 commit되면 round key를 만들고 `H = AES_K(0¹²⁸)`를 한 번 계산합니다. 이후 packet마다 두 AES 자원을 병렬로 사용해 payload counter keystream과 TAG mask를 준비합니다.
+
+### Packet, AAD와 nonce 구조
+
+한 영상 frame은 1,280개 packet으로 나뉘며 packet index는 `0`~`1279`입니다. UDP payload는 1,472바이트이고 IPv4 20바이트와 UDP 8바이트를 더하면 표준 MTU인 1,500바이트가 됩니다.
+
+| UDP payload byte | 크기 | 필드 | 인증/암호화 |
+|---:|---:|---|---|
+| `0..3` | 4 B | Magic `0x5043414D` (`PCAM`) | AAD로 인증, 평문 전송 |
+| `4..7` | 4 B | `session_id` | AAD로 인증, 평문 전송 |
+| `8..11` | 4 B | `frame_id` | AAD로 인증, 평문 전송 |
+| `12..13` | 2 B | `packet_index` | AAD로 인증, 평문 전송 |
+| `14..15` | 2 B | `flags` | AAD로 인증, 평문 전송 |
+| `16..1455` | 1,440 B | 영상 payload, 128-bit block × 90 | AES-CTR 암호화 + GHASH 인증 |
+| `1456..1471` | 16 B | GCM authentication tag | 수신 TAG 비교 |
+
+모든 다중 바이트 필드는 network byte order(big-endian)입니다. 첫 16바이트는 별도 비밀 데이터가 아니라 packet을 영상·세션 문맥에 묶는 AAD입니다.
+
+```text
+AAD   = magic || session_id || frame_id || packet_index || flags
+nonce = session_id[31:0] || frame_id[31:0] || 16'h0000 || packet_index[15:0]
+```
+
+| `flags` bit | 의미 | 유효 조건 |
+|---|---|---|
+| `[15:12]` | protocol version | 현재 `1` |
+| `[11:3]` | reserved | 모두 `0` |
+| `[2]` | EOF | packet `1279`에서만 `1` |
+| `[1]` | SOF | packet `0`에서만 `1` |
+| `[0]` | encrypted | AES-GCM mode이면 `1` |
+
+96-bit nonce는 전송하지 않고 양쪽이 AAD의 session/frame/packet 문맥으로 동일하게 재구성합니다. 정상 session에서 세 값의 조합이 packet마다 달라지므로 같은 key 아래 counter block이 재사용되지 않습니다.
+
+### GCM 계산 문맥
+
+NIST GCM 표기와 RTL의 계산 관계는 다음과 같습니다.
+
+```text
+H       = AES_K(0^128)
+J0      = nonce || 32'd1
+CTR_i   = nonce || BE32(i + 2),  i = 0 ... 89
+C_i     = P_i XOR AES_K(CTR_i)
+S       = GHASH_H(AAD, C_0 ... C_89, [128]_64 || [11520]_64)
+TAG     = AES_K(J0) XOR S
+```
+
+마지막 GHASH 입력의 `128`과 `11520`은 각각 AAD와 ciphertext의 bit 길이입니다. TAG는 128비트를 잘라 쓰지 않고 전체 비교합니다. AXI byte lane 0과 GCM의 최상위 byte 표기 차이는 protocol package의 byte-reversal 함수로 경계에서만 변환합니다.
+
+### TX 처리 순서: 평문이 DDR에 도달하기 전 암호화
+
+```text
+Pcam MIPI -> YUYV16 -> 128-bit packer
+  -> AAD/nonce 생성
+  -> {E_K(J0), E_K(CTR_0), GHASH(AAD)} 병렬 준비
+  -> 90회: plaintext XOR keystream -> ciphertext, GHASH(ciphertext)
+  -> GHASH(length) -> TAG 생성
+  -> ciphertext + {AAD, TAG} record writer
+  -> Video Frame Buffer Write / DDR -> PS UDP sender
+```
+
+[`video_aes_gcm_tx_top.sv`](fpga/tx/vivado/rtl/aes256_gcm/video_aes_gcm_tx_top.sv)은 packet 시작 시 auxiliary AES로 `E_K(J0)`, data AES로 첫 counter keystream, GHASH로 AAD 인증을 동시에 시작합니다. 각 plaintext block을 받아 ciphertext를 출력하면서 다음 counter를 미리 계산하고, 90번째 block 뒤에 length block을 누산해 TAG를 확정합니다. 따라서 원본 영상은 TX의 frame buffer/DDR 앞에서 이미 암호문으로 바뀝니다.
+
+Ciphertext와 AAD/TAG metadata는 독립 AXI channel이지만 하나의 packet commit으로 묶입니다. backpressure가 걸린 동안에는 `TVALID`가 유지되는 data와 metadata가 변하지 않도록 출력 register가 값을 보존합니다.
+
+### RX 처리 순서: authenticate-before-release
+
+```text
+AAD 1 beat -> header/session/flags 검사 + nonce 재구성
+  -> 90회: GHASH(ciphertext) + plaintext 임시 복호
+  -> plaintext를 write bank에 보관, 외부 출력은 아직 금지
+  -> GHASH(length) -> 수신 TAG 128-bit 비교
+  -> PASS: 저장된 plaintext 90 blocks 방출
+     FAIL: 같은 길이의 zero 90 blocks 방출
+```
+
+[`video_aes_gcm_rx_top.sv`](fpga/rx/vivado/rtl/aes256_gcm/video_aes_gcm_rx_top.sv)은 첫 128-bit beat에서 AAD를 파싱하고 magic, active session, packet index, version/reserved bit와 SOF/EOF 일관성을 검사합니다. 이어지는 90개 ciphertext block은 GHASH에 넣는 동시에 CTR로 복호화하지만, 그 결과를 바로 외부로 내보내지 않고 ping-pong packet buffer의 write bank에 저장합니다.
+
+마지막 TAG beat에서 header·stream 형식과 `received_tag == E_K(J0) XOR GHASH`를 모두 판정한 뒤 bank를 commit합니다. 성공한 bank만 plaintext를 내보내며, TAG·header·형식 중 하나라도 실패하면 해당 bank를 zero-output으로 표시해 90개의 0 block을 방출합니다. 이렇게 downstream video 길이와 timing은 유지하면서 인증되지 않은 평문이 먼저 노출되는 early-release를 차단합니다.
+
+RX record의 AXI 입력은 `AAD 1 + ciphertext 90 + TAG 1 = 92`개의 128-bit transfer입니다. 모든 transfer의 `TKEEP`은 `16'hFFFF`이고, `TLAST`는 frame의 마지막 packet인 index `1279`의 TAG에서만 올라옵니다.
+
+[`gcm_rx_error_detector.sv`](fpga/rx/vivado/rtl/rx/gcm_rx_error_detector.sv)는 stream을 바꾸지 않는 입력 tap으로 다음 이벤트를 별도 sticky bit·counter·last context에 기록합니다.
 
 | Detector | 발생 조건 | 데모에서 보이는 의미 |
 |---|---|---|
@@ -126,20 +202,6 @@ Jetson의 `br-video`는 두 유선 NIC를 잇고 packet parser가 UDP 5602 traff
 ### PC: 서로 다른 증거의 합성
 
 PC backend는 RX HDMI 영상, RX UART telemetry와 Jetson `/api/attack/status`를 수집합니다. UI는 공격 명령을 성공으로 간주하지 않고, Jetson의 실제 phase와 RX detector counter 증가를 구분해 event timeline에 기록합니다. OCC `PASS` 또는 명시적 개발 해제만 live receiver gate를 열 수 있습니다.
-
-## 보안·패킷 계약
-
-| 항목 | 값 |
-|---|---|
-| 영상 | 1280×720 YUYV, 약 29~30 fps |
-| 알고리즘 | AES-256-GCM |
-| 패킷 | AAD 16 B + ciphertext 1440 B + authentication tag 16 B = 1472 B |
-| GCM nonce | `session_id[31:0] || frame_id[31:0] || 16'h0000 || packet_id[15:0]` |
-| 다중 바이트 필드 | Network / big-endian |
-| 세션 설정 | X25519 ECDH + HKDF-SHA256 + AES-GCM capsule |
-| RX 탐지 | TAG, REPLAY, SEQUENCE, SESSION, TIMEOUT |
-| 영상 출력 | RX HDMI 1280×720p60 carrier |
-| 상태 출력 | RX UART 115200 baud + Jetson HTTP API |
 
 ## 하드웨어 구성
 
@@ -249,19 +311,37 @@ AES/
 
 ### 통합 코어와 독립형 참고 코어
 
-두 구현은 같은 AES-256-GCM을 수행하지만 용도와 구조가 다릅니다. `fpga/tx`와
-`fpga/rx` 아래의 코어가 최종 영상 시스템의 실제 합성 경로이며, `reference`의
-코어는 플랫폼·AXI packet adapter와 분리해 암호 연산 구조와 검증 근거를
-보존하는 독립형 참고 구현입니다.
+두 구현은 AES-256-GCM의 수학적 연산은 같지만 교체 가능한 동일 wrapper가 아닙니다.
+`fpga/tx`와 `fpga/rx`의 코어는 1,280-packet 영상 frame과 AXI/DMA 경로에 맞춘
+최종 구현이고, [`reference/original_aes256_gcm_core`](reference/original_aes256_gcm_core/README.md)는
+플랫폼과 packet protocol을 제거해 암호 연산 자체를 독립적으로 구동할 수 있게 한
+초기 standalone 계열입니다.
 
 | 구분 | 최종 통합 구현 | 독립형 참고 구현 |
 |---|---|---|
-| 위치 | `fpga/tx`, `fpga/rx` | `reference/original_aes256_gcm_core` |
-| AES 구조 | 외부 key expansion + `aes256_iterative_core` | round-key cache를 포함한 `aes256_core` |
-| GCM 결합 | 영상 packet/AXI stream 전용 TX·RX top | command 및 128-bit `valid/ready` GCM engine |
-| 인증 전 평문 | RX packet BRAM에서 판정 후 commit | `authenticated_packet_buffer`에서 격리 |
-| 빌드 관계 | 최종 TX/RX bitstream 대상 | 최종 bitstream에는 자동 포함되지 않는 참고 코어 |
-| 관리 목적 | 최종 TX/RX 시스템 재현 | 코어 단독 재사용과 구조·검증 비교 |
+| 대표 top | [`video_aes_gcm_tx_top`](fpga/tx/vivado/rtl/aes256_gcm/video_aes_gcm_tx_top.sv), [`video_aes_gcm_rx_top`](fpga/rx/vivado/rtl/aes256_gcm/video_aes_gcm_rx_top.sv) | [`gcm_tx_engine`](reference/original_aes256_gcm_core/rtl/gcm_tx_engine.sv), [`gcm_rx_engine`](reference/original_aes256_gcm_core/rtl/gcm_rx_engine.sv) |
+| 입력 문맥 | `session_id`, `frame_id`, `packet_index`로 AAD와 nonce를 내부 생성 | `cmd_key`, `cmd_iv`, `cmd_aad`, `cmd_payload_blocks`를 외부 명령으로 입력 |
+| 데이터 인터페이스 | 영상용 128-bit AXI4-Stream, `TKEEP/TLAST`와 별도 AAD/TAG metadata channel | AXI에 종속되지 않는 128-bit `valid/ready` command/data interface |
+| Payload 길이 | packet당 90 blocks 고정, frame당 1,280 packets | full-block 개수를 command로 지정; 독립 buffer 기본값은 80 blocks |
+| AES 자원 | 외부 key expansion 1개 + iterative AES 2개(data/auxiliary) | round-key cache를 내장한 iterative AES 1개 |
+| 연산 scheduling | payload CTR과 `H`/TAG mask를 두 AES에 분담해 병렬 준비 | 단일 AES를 단계별로 재사용하고 AES와 GHASH를 block 단위로 중첩 |
+| GHASH 구조 | `ghash_mul16` 한 모듈이 8 bits/clock으로 종속 누산 | `ghash_engine_seq` 제어기와 `gf128_mult_8bit_seq` 곱셈기를 분리 |
+| Protocol 검사 | `PCAM`, version/flags, session, SOF/EOF, sequence와 stream 형식 검사 포함 | GCM message만 처리하며 영상 header, replay/sequence 의미는 모름 |
+| 인증 전 평문 | 2 × 90-block ping-pong BRAM에 저장; 실패 시 90개 zero block 출력 | 별도 `authenticated_packet_buffer`에 저장; 실패 시 packet을 출력하지 않음 |
+| 실패 시 timing | 영상 pipeline 길이를 보존해 HDMI 경로가 계속 진행 | generic consumer가 다음 동작을 결정하도록 출력 자체를 억제 |
+| 검증 초점 | packet format, TX/RX round trip, 오류 detector, video pipeline 통합 | AES-256 NIST KAT 405개와 standalone GCM/TAG/quarantine 동작 |
+| 사용 위치 | 최종 TX/RX bitstream의 실제 합성 경로 | 코어 단독 학습·재사용·구조 비교용이며 최종 bitstream에는 자동 포함되지 않음 |
+
+가장 큰 구조 차이는 **AES 개수와 책임 범위**입니다. 독립형은 AES 하나와 GHASH
+하나를 재사용하는 범용 message engine이므로 상위 계층이 IV, AAD, 길이와 packet
+격리를 제공해야 합니다. 최종 통합형은 AES를 두 개로 나누고 영상 protocol 생성,
+header/freshness 검사와 실패 packet의 zero-fill까지 포함해 보드의 고정 streaming
+경로를 직접 책임집니다.
+
+독립형 코어는 AES/GCM 연산을 이해하고 단독 검증하기 좋은 기준이며, 최종 통합
+코어는 그 기능을 영상 전송 규격에 맞게 확장한 시스템 구현입니다. 따라서 독립형을
+최종 경로에 넣으려면 AXI adapter만 연결하는 것으로는 부족하고, 90-block packet
+계약, AAD/nonce 생성, session·sequence 검사와 zero-fill 정책을 함께 구현해야 합니다.
 
 ## 실행 개요
 
