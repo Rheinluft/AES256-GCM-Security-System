@@ -1,4 +1,4 @@
-# AES_GCM_TX — 3-2 PL 직결
+# AES_GCM_TX — PL 직결 암호화 경로
 
 ## 데이터 경로
 
@@ -19,7 +19,10 @@ Pcam MIPI → PL YUYV16 → pack128 → PL AES-256-GCM
 
 ## SD
 
-`sd_card`의 8개 파일을 FAT32 첫 파티션 루트에 모두 복사하고 `SHA256SUMS`를 검증한다. 이 폴더의 `BOOT.BIN`은 같은 폴더의 `system.bit`을 포함해 재생성됐다.
+SD 배포 시에는 같은 빌드에서 만든 `BOOT.BIN`, `boot.cmd`, `boot.scr`,
+`image.ub`, `system.bit`, `system.dtb`, `README.md`, `SHA256SUMS` 8개를 FAT32 첫
+파티션 루트에 함께 복사하고 hash를 검증한다. 이 저장소에는 재생성에 필요한
+Vivado/PetaLinux source와 script가 있다.
 
 ## JTAG
 
@@ -36,4 +39,5 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\petalinux\JTAG_RAM_BOOT\r
 - XSA `8DC586999DE1EBA439184843B7CA67ADCF53A3AE93B3EC504AAE5E8D9AEB3F59`
 - JTAG cold boot secure session `0x8e332bbf`, PC UART 약 30 fps, auth reject 0
 
-자세한 기록은 상위 `docs/2026-08-12_3-2_FINAL_JTAG_SD_validation.md`를 참조한다.
+packet 단위 검증과 재현 명령은 [검증 문서](../../verification/README.md), TX/RX
+전체 연결은 [FPGA 설계 문서](../README.md)를 참조한다.

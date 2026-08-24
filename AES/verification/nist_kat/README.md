@@ -4,14 +4,16 @@
 정답은 NIST가 배포한 값을 그대로 쓰므로, 이 프로젝트의 코드는 정답 생성에
 전혀 관여하지 않는다.
 
-## 검증 결과
+## 보존된 검증 결과
 
-| 시뮬레이터 | 벡터 | 결과 | 일자 |
-|---|---|---|---|
-| Vivado xsim 2025.2 | 405 | **0 fail** | 2026-08-13 |
-| Synopsys VCS | 405 | **0 fail** | 2026-08-13 |
+| DUT | 시뮬레이터 | 벡터 | 결과 | 일자 | 근거 |
+|---|---|---:|---:|---|---|
+| `aes256_iterative_core` | Synopsys VCS W-2024.09-SP1 | 405 | **405 pass, 0 fail** | 2026-08-13 | [실행 로그](../../reference/original_aes256_gcm_core/verification/nist_aes256_kat/results/vcs_aes256_iterative_core_20260813.txt) |
 
-서로 다른 벤더의 시뮬레이터가 같은 표준 벡터에 대해 동일한 결과를 냈다.
+Vivado xsim 실행 스크립트도 함께 제공되지만, 현재 저장소에 보존된 2026-08-13
+`aes256_iterative_core` 실행 근거는 위 VCS 로그와 Verdi 화면이다. 독립형 참고
+폴더에 있는 2026-08-17 xsim 405-vector 로그는 DUT가
+`rtl/aes256_core.sv`인 별도 실행이므로 이 결과와 합쳐 표기하지 않는다.
 
 ## 벡터 출처
 
@@ -82,7 +84,7 @@ make verdi                # 남은 FSDB 열기
 .\sim\run_aes_core_kat.ps1 -DumpWave      # 파형 기록 후 GUI로 열기
 ```
 
-두 플로우는 `filelist.f` 하나를 공유하므로 소스가 바뀌어도 어긋나지 않는다.
+두 플로우는 `filelist.f` 하나를 공유하므로 동일한 소스 목록으로 다시 실행할 수 있다.
 
 ## 예상 출력
 
@@ -123,8 +125,8 @@ xsim은 2020.2/2025.2 양쪽에서 `$fatal`로 죽으면서도 **종료 코드 0
 Makefile 모두 로그의 최종 판정문(`RESULT     : PASS`)을 직접 확인한다. CI에
 연결할 때도 이 방식을 유지해야 한다.
 
-TB가 실제로 불일치를 잡아내는지는 역검증으로 확인했다 — 기대 암호문 한 글자를
-바꾸면 해당 벡터에서 FAIL이 나고 KEY/PT/EXP/GOT를 출력한다 (xsim에서 확인).
+TB의 mismatch 경로는 기대 암호문 한 글자를 바꾸는 역검증으로 확인할 수 있다.
+해당 벡터에서 FAIL과 KEY/PT/EXP/GOT가 출력되어야 한다.
 
 ## 파일 구성
 

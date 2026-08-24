@@ -17,7 +17,7 @@ numpy==2.2.6
 opencv-python==4.12.0.88
 ```
 
-`.venv`는 PC별 생성물이라 보관본에 포함하지 않는다.
+`.venv`는 PC별 생성물이므로 source tree 밖에서 다시 만들 수 있다.
 
 ## 사용
 
@@ -29,8 +29,7 @@ opencv-python==4.12.0.88
 
 사진 찌꺼기가 쌓이지 않도록 자동 PNG 저장은 하지 않는다. `S`를 누른 경우에만 `manual_날짜_시간.png` 한 장을 저장한다.
 
-2026-08-09 직결 재검증 결과와 원인·복구 내역은 `VALIDATION_RESULT.md`에 기록했다.
-
-TX/RX 직결 케이블을 Jetson 2-NIC Linux bridge 경유로 다시 꽂을 때는 `JETSON_2NIC_중간삽입_재배선_운용README.md`를 먼저 따른다. Zybo IP/MAC/UDP 계약, 케이블 순서, 현재 old image의 link-flap 주소 유실 주의, 15초/300-frame 실제 화면 gate와 Web/UI 경계를 함께 기록했다.
-
-현재 FPGA 기준본은 상위 `01. zybo_fpga/3-3. 2차변형_ECC_데모_260812_0144_TX_PL_직결_최종본.7z`이며, 최신 PC·Jetson Dashboard 실행본은 상위 `03. 대시보드`에 있다. 과거 PC AI·CUDA 사전검증은 형제 폴더 `00. 초기 통합 및 AI 실험 계보`에서 현재 도구와 분리해 보존한다.
+TX/RX 사이에 Jetson 2-NIC Linux bridge를 연결할 때는
+[`JETSON_2NIC_중간삽입_재배선_운용README.md`](JETSON_2NIC_중간삽입_재배선_운용README.md)를
+따른다. 영상과 RX 보안 상태를 한 화면에서 보려면
+[PC Receiver Console](../dashboard/README.md)을 사용한다.

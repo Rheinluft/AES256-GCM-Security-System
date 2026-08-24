@@ -8,7 +8,7 @@ prefix of it, plus the matching prefix of the expected plaintext.
 
 File byte 0 goes to TDATA[7:0]; no byte swapping happens here.
 
-Outputs (into 04_TX_TO_RX/data/):
+Outputs (into tx_rx_loopback/data/):
     tx_records_<N>pkt.bin  N x 1472 B  -> s_axis stimulus (TX RTL output)
     tx_plain_<N>pkt.bin    N x 1440 B  -> expected m_axis payload
 
@@ -18,7 +18,7 @@ from pathlib import Path
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-TX = ROOT.parent / "02_TX_GOLDEN" / "results"
+TX = ROOT.parent / "tx_uvm" / "vectors"
 DATA = ROOT / "data"
 
 PAYLOAD_BYTES = 1440

@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// 03_RX_AUTH RTL file list (compile order matters: packages first)
+// TX->RX loopback RTL file list (compile order matters: packages first)
 //   pkg -> aes256_gcm submodules -> rx core top -> rx wrapper (DUT)
 // ---------------------------------------------------------------------------
 +incdir+../rtl/aes256_gcm

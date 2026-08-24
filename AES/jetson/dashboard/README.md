@@ -33,8 +33,6 @@ TX에 Weak Session 생성을 요청하고, 관찰한 AES-GCM packet으로 CPU �
 
 Prepare는 backend에서 생성한 64비트 request ID를 작업이 끝날 때까지 유지한다. TX ACK의 profile·request ID·seed bits와 실제 관찰 packet의 session ID가 모두 일치해야 `weak-ready`가 된다. timeout이나 다른 session packet이 관찰되면 같은 ID로 다시 시도한다. Reset, Secure, 준비 중 Stop은 기존 Weak 작업 종료 뒤 Secure 요청을 직렬 실행하며, Secure ACK와 같은 session packet을 확인할 때까지 `returning-secure`를 표시한다. frontend는 backend의 실제 `prepare_status`를 200 ms snapshot으로 표시하고 임의 시간 애니메이션으로 준비 단계를 꾸미지 않는다.
 
-2026-08-20 실제 Jetson의 현재 backend·배포 UI·공격 엔진 파일을 이 폴더와 파일별 SHA-256으로 다시 대조했다. 현재 실행 파일은 일치하며, 장치에 남은 과거 backup·검증 캡처·runtime 업로드는 실행 정본에 중복 포함하지 않는다.
-
 ## 로컬 VLM
 
 - 모델: NVIDIA Cosmos-Reason2-2B Q4_K_M GGUF
@@ -68,7 +66,7 @@ Prepare는 backend에서 생성한 64비트 request ID를 작업이 끝날 때�
 - `tamper/`: ciphertext bit 변조 엔진
 - `replay/`: 정상 패킷 저장·재주입 엔진
 - `bruteforce/`: Weak-Key CPU/CUDA 검색과 frame recovery
-- `local-vlm-test/`: Cosmos VLM 앱, 모델, CUDA runtime
+- `local-vlm-test/`: Cosmos VLM 앱과 실행 스크립트. GGUF 모델과 CUDA llama.cpp runtime은 Jetson에 별도 배치
 - `operator/`: 대시보드와 공격 엔진 실행 스크립트·서비스
 - `tests/`: backend contract와 packet metadata 검사
 
@@ -102,11 +100,3 @@ npm run build
 cd ..
 python3 -m unittest discover -s tests -p 'test_*.py'
 ```
-
-## 2026-08-17 실제 배포본 대조
-
-- 실제 Jetson project의 현재 backend, 배포 UI, Tamper, Replay, Weak-Key 공통 파일은 보관본과 대조했다.
-- 실제 설치된 `zybo-tamper-engine.service`는 이 보관본의 service와 일치하며 enabled/active 상태다.
-- 실제 Jetson에만 남아 있던 필수 `telemetry/receiver.py`, telemetry README와 두 정상 샘플을 이 보관본에 회수했다.
-- `/home/jetson/local-vlm-test`의 앱, 실행 스크립트, 두 GGUF 모델은 이 보관본과 일치하며 user service가 enabled/active 상태다.
-- 실제 project에 남아 있는 과거 assets, runtime, pcap, validation과 backup 파일은 현재 `dashboard/index.html`이 참조하는 배포 asset과 구분한다.

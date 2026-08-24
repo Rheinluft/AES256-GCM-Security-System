@@ -26,11 +26,11 @@ Jetson/PC tests
 
 | 계층 | DUT / 범위 | 독립 기준 | 보관된 최종 결과 |
 |---|---|---|---|
-| [`nist_kat`](nist_kat/README.md) | AES-256 ECB core와 key expansion | NIST AESAVS `.rsp` | 405/405, 0 fail |
+| [`nist_kat`](nist_kat/README.md) | `aes256_iterative_core`와 key expansion | NIST AESAVS `.rsp` | 보존 VCS 결과 405/405, 0 fail |
 | [`aes256_c_vs_fpga`](aes256_c_vs_fpga/README.md) | scalar C와 FPGA AES core | OpenSSL AES-256 golden | C/RTL 각각 10,000/10,000 일치 |
 | [`tx_uvm`](tx_uvm/README.md) | `video_aes_gcm_tx_top` | C/OpenSSL packet golden | 1280 packet, mismatch/protocol error 0 |
-| [`rx_uvm`](rx_uvm/) | RX authentication/decryption과 5종 detector | golden plaintext + scenario error signature | 10개 scenario regression PASS |
-| [`tx_rx_loopback`](tx_rx_loopback/) | TX record에서 RX plaintext까지 | TX UVM handoff + RX golden | 8/16/1280 packet handoff PASS |
+| [`rx_uvm`](rx_uvm/README.md) | RX authentication/decryption과 5종 detector | golden plaintext + scenario error signature | 10개 scenario regression PASS |
+| [`tx_rx_loopback`](tx_rx_loopback/README.md) | TX record에서 RX plaintext까지 | TX UVM handoff + RX golden | 8/16/1280 packet handoff PASS |
 | [`fpga/session_control`](../fpga/session_control/) | ECDH/capsule/session state | host mock와 persistent state assertions | crypto/recovery/supervision PASS |
 | [`jetson/dashboard/tests`](../jetson/dashboard/tests/) | 공격·Weak-Key·telemetry backend | Python unittest | 19 tests PASS |
 | Jetson UI | 표시·animation 계약 | Node test runner | 8 tests PASS |
@@ -238,10 +238,11 @@ FULL=1 ./run_regression.sh
 
 ![Synopsys URG에서 확인한 RX UVM error code와 flag functional coverage 100%](assets/rx_uvm_functional_coverage.png)
 
-이 화면의 100%는 RX 오류 검출 functional covergroup에 대한 결과입니다. 5종
-오류 code와 각 error flag가 모두 hit되어 64/64 bin을 채웠다는 뜻이며, FSM
-전이까지 전부 100%라는 의미는 아닙니다. 보고서의 FSM coverage는 별도 범위로
-관리합니다.
+이 화면의 100%는 RX 오류 검출 functional covergroup에 대한 결과입니다. 화면에
+표시된 두 covergroup instance가 각각 명시적으로 정의한 10개 bin, 즉 5종 오류
+code와 5개 개별 error flag를 모두 hit했습니다. 화면의 `AutoBin Max = 64`는 자동
+bin 생성 한도이며 `64/64 bin`을 뜻하지 않습니다. FSM 전이 coverage는 이 수치와
+별도 범위로 관리합니다.
 
 개별 test는 다음 형식입니다.
 
@@ -252,7 +253,7 @@ FULL=1 ./run_regression.sh
 
 ## 5. TX → RX loopback / handoff
 
-[`tx_rx_loopback`](tx_rx_loopback/)은 RX test용 record가 TX와 무관하게 생성되는 것을 막습니다.
+[`tx_rx_loopback`](tx_rx_loopback/README.md)은 RX test용 record가 TX와 무관하게 생성되는 것을 막습니다.
 
 ### 절차
 

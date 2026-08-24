@@ -1,7 +1,7 @@
 #!/bin/bash
 # TX->RX loopback UVM simulation (single test).
 #   ./run_uvm.sh <test_name> [npkt] [stall_pct]
-# Stimulus comes from 02_TX_GOLDEN/results (verified TX RTL output).
+# Stimulus comes from tx_uvm/vectors (verified TX RTL output).
 set -e
 cd "$(dirname "$0")"
 

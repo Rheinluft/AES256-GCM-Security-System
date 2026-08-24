@@ -1,6 +1,7 @@
 # AES_GCM_RX — PL 5종 오류 검출 + PC 01 UI
 
-기본 영상·세션 계약은 [`../docs/ZYBO_Jetson_보안데모_V1_FINAL_FREEZE_20260809.md`](../docs/ZYBO_Jetson_보안데모_V1_FINAL_FREEZE_20260809.md)를 따르고, 최신 RX detector/telemetry 계약은 [`../docs/2026-08-11_RX_5detector_PC_UI_validation.md`](../docs/2026-08-11_RX_5detector_PC_UI_validation.md)를 우선한다.
+영상·세션 공통 구조는 [FPGA 설계 문서](../README.md)를 따르고, RX의 현재
+detector와 telemetry 동작은 이 폴더의 RTL·PetaLinux 소스를 기준으로 설명한다.
 
 session Wi-Fi SSID는 `KCCI_STC_S`이며 PSK는 image의 `wpa.conf`에 해시로 저장한다.
 
@@ -27,20 +28,32 @@ HDMI 반송 타이밍은 `1280×720p60`이다. 실제 영상 내용은 약 `29~3
 
 `vivado/rtl/rx/gcm_rx_error_detector.sv`는 stream을 변경하지 않는 입력 전용 tap이다. TAG, REPLAY, SEQUENCE, SESSION, TIMEOUT 5종을 개별 계수하고 sticky/last context를 AXI GPIO `0x41220000`으로 제공한다. 같은 Session의 과거 valid full frame에 대한 기존 PetaLinux `(session_id, frame_id)` freshness 검사도 함께 유지한다.
 
-RX는 Jetson이 아니라 PC에 versioned UDP telemetry v2를 약 5 Hz로 보낸다. 목적지는 고정 PC IP가 아닌 `239.77.77.77:47000`, security event는 `:47001`이며 TTL은 1이다. 따라서 PC와 RX가 같은 Wi-Fi에 연결되면 DHCP 주소와 부팅 순서가 달라도 동작한다.
+현재 RX 애플리케이션은 PC 상태 정보를 UDP multicast가 아니라 **framed UART**로 약 5 Hz 전송한다. 기본 장치는 `/dev/ttyPS0`, 속도는 `115200 baud`이며 환경 변수 `PC_TELEMETRY_UART`, `PC_TELEMETRY_UART_BAUD`로 바꿀 수 있다. 인증된 session이 활성화되기 전에는 UART 출력을 시작하지 않는다.
 
-PC에서 `../PC_RX_UI/run_pc_ui.bat`를 실행한다. 기본 주소는 `http://127.0.0.1:8765/`이고 충돌 시 다음 빈 포트를 자동 선택한다. USB HDMI capture 영상과 valid FPS, 5종 누계, session/마지막 오류 context를 한 화면에서 확인한다. Jetson `http://100.72.159.6:4173/`은 `01 INTEGRITY ATTACK`, `02 WEAK-KEY SEARCH` 역할만 유지한다.
+```text
+ZYBO_RX_V1 T <CRC32> <telemetry JSON>
+ZYBO_RX_V1 E <CRC32> <security-event JSON>
+```
+
+`T` frame에는 valid/attempt FPS, 인증·replay 거부율, drop/jitter, 누계와 PL 5종 detector 상태가 들어간다. `E` frame은 별도의 보안 event를 전달한다. 두 JSON 모두 `protocol_version=2`, `source_role=zybo-rx`, `transport=uart`를 포함하며 PC backend는 prefix, 종류, CRC32와 이 세 필드를 검사한다.
+
+PC에서는 [`run_pc_ui.bat`](../../pc/dashboard/README.md)를 실행한다. 기본 주소는 `http://127.0.0.1:8765/`이고 충돌 시 다음 빈 포트를 자동 선택한다. USB HDMI capture 영상과 valid FPS, 5종 누계, session/마지막 오류 context를 한 화면에서 확인한다. Jetson `http://100.72.159.6:4173/`은 공격 실행·상태와 Weak-Key 검색을 담당한다.
 
 ## SD 카드
 
-`AES_GCM_RX/sd_card`의 다음 **정확히 8개 파일을 전부** FAT32 첫 파티션 루트에 복사한다.
+SD 배포 시 같은 빌드에서 만든 다음 **정확히 8개 파일을 전부** FAT32 첫
+파티션 루트에 복사한다.
 
 ```text
 BOOT.BIN  boot.cmd  boot.scr  image.ub
 system.bit  system.dtb  README.md  SHA256SUMS
 ```
 
-두 번째 ext4 파티션도 유지한다. RX는 `/run/media/rootfs-mmcblk0p2/var/lib/aes-session`에 인증된 capsule, counter, session ID와 phase를 root 전용 권한으로 보존해 RX 단독 재부팅 뒤 같은 Session을 복구한다. JTAG/RAM 부팅 또는 ext4 부재 시에는 휘발성 fallback만 사용한다.
+두 번째 ext4 rootfs 파티션도 유지한다. RX session agent의 기본 상태 경로는
+`/var/lib/aes-session`이며 인증된 capsule, counter, session ID와 phase를 root
+전용 권한으로 보존한다. SD rootfs 부팅에서는 이 경로가 영속되고 JTAG/RAM
+rootfs에서는 같은 경로가 휘발성이지만, 인증된 counter-floor 복구 절차로 다시
+수렴한다.
 
 고정 부팅 계약:
 
@@ -59,20 +72,20 @@ fdt_high=0x17ffffff
 ## JTAG RAM 부팅
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File ".\AES_GCM_RX\petalinux\JTAG_RAM_BOOT\run_jtag_boot.ps1"
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\petalinux\JTAG_RAM_BOOT\run_jtag_boot.ps1"
 ```
 
 현장 기본값은 cable `210351BE7D5BA`, `COM12`, `10.10.15.3/24`, 유선 MAC `02:00:00:00:00:03`이다. loader 주소도 `system.dtb=0x00100000`, `image.ub=0x10000000`으로 고정한다.
 
 RX 영상 Ethernet은 `10.10.15.3/24` role-static이며 유선 `en*`에 generic DHCP를 실행하지 않는다. Jetson bridge 경유와 TX `10.10.15.2/24` 직결 모두 동일한 주소/MAC 계약을 사용한다.
 
-Jetson NIC1/NIC2 사이에 다시 배선할 때는 `../docs/JETSON_2NIC_중간삽입_재배선_운용README.md`의 bridge/FDB/주소/300-frame gate를 따른다.
+Jetson NIC1/NIC2 사이에 다시 배선할 때는
+[`Jetson 2-NIC 재배선·운용`](../../pc/preview/JETSON_2NIC_중간삽입_재배선_운용README.md)의
+bridge/FDB/주소/화면 gate를 따른다.
 
 주요 경로:
 
-- SD 배포물: `AES_GCM_RX/sd_card`
-- JTAG RAM 부팅: `AES_GCM_RX/petalinux/JTAG_RAM_BOOT`
-- PetaLinux 재빌드: `AES_GCM_RX/petalinux/build_petalinux.sh`
-- Vivado 재빌드: `AES_GCM_RX/vivado/tcl/build_aes_gcm_rx.tcl`
-- 5종 detector 단위시험: `AES_GCM_RX/vivado/sim/tb_gcm_rx_error_detector.sv`
-- 하드웨어 산출물: `AES_GCM_RX/vivado/artifacts/AES_GCM_RX.bit`, `AES_GCM_RX/vivado/artifacts/AES_GCM_RX.xsa`
+- JTAG RAM 부팅: `petalinux/JTAG_RAM_BOOT/`
+- PetaLinux 재빌드: `petalinux/build_petalinux.sh`
+- Vivado 재빌드: `vivado/tcl/build_aes_gcm_rx.tcl`
+- 인증·5종 detector 회귀 시험: [`../../verification/rx_uvm`](../../verification/rx_uvm/README.md)

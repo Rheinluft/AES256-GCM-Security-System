@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pack the OpenSSL golden handoff into DUT-ready RX stimulus files.
+"""Pack the verified TX handoff into DUT-ready RX stimulus files.
 
 The handoff stores AAD / ciphertext / TAG in three separate streams.  The RX
 AXI-Stream expects them interleaved per packet as one 1472-byte record:
@@ -11,7 +11,7 @@ AXI-Stream expects them interleaved per packet as one 1472-byte record:
 File byte 0 goes to TDATA[7:0], so the testbench packs bytes in order and no
 byte swapping happens here.
 
-Outputs (into 03_RX_AUTH/data/):
+Outputs (into rx_uvm/data/):
     rx_normal_<N>pkt.bin  N x 1472 B  -> s_axis stimulus
     rx_plain_<N>pkt.bin   N x 1440 B  -> expected m_axis payload
 
@@ -21,7 +21,7 @@ from pathlib import Path
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-HANDOFF = ROOT.parent / "00_1_benchmark" / "rx_core_golden_handoff_pcam_1280_20260813"
+HANDOFF = ROOT.parent / "tx_uvm" / "vectors"
 DATA = ROOT / "data"
 
 AAD_BYTES = 16
@@ -34,9 +34,9 @@ count = int(sys.argv[1]) if len(sys.argv) > 1 else TOTAL_PACKETS
 if not 1 <= count <= TOTAL_PACKETS:
     raise SystemExit(f"packet_count must be 1..{TOTAL_PACKETS}")
 
-aad = (HANDOFF / "aad_1280.bin").read_bytes()
-ct = (HANDOFF / "ciphertext_1280.bin").read_bytes()
-tag = (HANDOFF / "tag_1280.bin").read_bytes()
+aad = (HANDOFF / "tx_rtl_aad_1280.bin").read_bytes()
+ct = (HANDOFF / "tx_rtl_ciphertext_1280.bin").read_bytes()
+tag = (HANDOFF / "tx_rtl_tag_1280.bin").read_bytes()
 pt = (HANDOFF / "plaintext_1280.bin").read_bytes()
 
 records = bytearray()

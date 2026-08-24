@@ -9,6 +9,13 @@ AES-256-GCM 암호 연산 RTL입니다. `gcm_tx_engine`과 `gcm_rx_engine`은 �
 > 시스템이 합성하는 `AES/fpga/tx`·`AES/fpga/rx` 코어와는 별도이며, 최종
 > bitstream 빌드에 자동으로 포함되지 않습니다.
 
+이 폴더에는 두 시점의 검증 자료가 함께 있습니다. 초기
+`aes256_iterative_core`의 보존 결과는 2026-08-13 VCS/Verdi NIST AESAVS
+405-vector KAT입니다. 현재 RTL의 `aes256_core`와 GCM TX/RX 엔진은
+2026-08-17 xsim에서 별도로 시험했습니다. 아래 GCM PASS는 후속 엔진의
+4-block directed test이며 초기 반복형 AES 코어나 최종 영상 packet 시스템의
+GCM 검증 결과가 아닙니다.
+
 ## 구성
 
 ```text
@@ -299,11 +306,11 @@ payload 경계 판정 등록에 추가 register와 제어 논리를 사용하는
 
 ## 검증 항목 및 결과
 
-최신 standalone 코어는 GCM TX/RX 통합 동작과 AES-256 블록 암호 코어를
-각각 검증합니다. GCM 테스트는 인증 전 평문과 인증 후 출력의 신뢰 경계까지
+현재 standalone RTL은 GCM TX/RX 통합 동작과 AES-256 블록 암호 코어를 각각
+검증합니다. GCM directed test는 인증 전 평문과 인증 후 출력의 신뢰 경계까지
 검사하며, AES KAT는 NIST AESAVS 벡터 전체를 비교합니다.
 
-### GCM TX/RX 엔진
+### 후속 GCM TX/RX 엔진 directed test
 
 ```powershell
 cd AES\reference\original_aes256_gcm_core
@@ -329,7 +336,9 @@ cd AES\reference\original_aes256_gcm_core
 [TB][PASS] GCM TX/RX core engine test
 ```
 
-Vivado xsim 2025.2에서 위 검증 항목을 모두 통과했습니다.
+Vivado xsim 2025.2에서 위 검증 항목을 모두 통과했습니다. 이는 4-block 고정
+시나리오의 기능 시험이며 NIST GCM KAT, UVM regression 또는 영상 packet 전체
+검증으로 확대 해석하지 않습니다.
 
 ### AES-256 NIST KAT
 
@@ -350,7 +359,7 @@ cd AES\reference\original_aes256_gcm_core
 
 | DUT/검증 | 시뮬레이터 | 결과 | 실행일 | 근거 |
 |---|---|---:|---|---|
-| 현재 GCM TX/RX 엔진 통합 검증 | Vivado xsim 2025.2 | **PASS** | 2026-08-17 | [테스트벤치](tb/tb_gcm_engines.sv) · [실행 스크립트](sim/run_gcm_engine_test.ps1) |
+| 현재 GCM TX/RX 엔진 4-block directed test | Vivado xsim 2025.2 | **PASS** | 2026-08-17 | [실행 로그](results/gcm_engine_xsim_20260817.txt) · [테스트벤치](tb/tb_gcm_engines.sv) |
 | 현재 `rtl/aes256_core.sv` NIST KAT | Vivado xsim 2025.2 | **405 pass, 0 fail** | 2026-08-17 | [xsim 실행 로그](verification/nist_aes256_kat/results/aes256_core_xsim_20260817.txt) |
 | 기존 iterative AES-256 core NIST KAT | Synopsys VCS W-2024.09-SP1 | **405 pass, 0 fail** | 2026-08-13 | [VCS 실행 로그](verification/nist_aes256_kat/results/vcs_aes256_iterative_core_20260813.txt) |
 

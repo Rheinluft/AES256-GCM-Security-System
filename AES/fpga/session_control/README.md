@@ -1,4 +1,4 @@
-# Session Control V1 — 3-1 final
+# Session Control V1
 
 ## 역할과 전송 경로
 

@@ -329,7 +329,7 @@ AES/
 | Protocol 검사 | `PCAM`, version/flags, session, SOF/EOF, sequence와 stream 형식 검사 포함 | GCM message만 처리하며 영상 header, replay/sequence 의미는 모름 |
 | 인증 전 평문 | 2 × 90-block ping-pong BRAM에 저장; 실패 시 90개 zero block 출력 | 별도 `authenticated_packet_buffer`에 저장; 실패 시 packet을 출력하지 않음 |
 | 실패 시 timing | 영상 pipeline 길이를 보존해 HDMI 경로가 계속 진행 | generic consumer가 다음 동작을 결정하도록 출력 자체를 억제 |
-| 검증 초점 | packet format, TX/RX round trip, 오류 detector, video pipeline 통합 | AES-256 NIST KAT 405개와 standalone GCM/TAG/quarantine 동작 |
+| 검증 근거 | 반복형 AES VCS KAT 405개와 packet/UVM/TX→RX/system 시험 | 현재 `aes256_core` xsim KAT 405개와 후속 GCM engine 4-block directed 시험 |
 | 사용 위치 | 최종 TX/RX bitstream의 실제 합성 경로 | 코어 단독 학습·재사용·구조 비교용이며 최종 bitstream에는 자동 포함되지 않음 |
 
 가장 큰 구조 차이는 **AES 개수와 책임 범위**입니다. 독립형은 AES 하나와 GHASH
@@ -342,6 +342,12 @@ header/freshness 검사와 실패 packet의 zero-fill까지 포함해 보드의 
 코어는 그 기능을 영상 전송 규격에 맞게 확장한 시스템 구현입니다. 따라서 독립형을
 최종 경로에 넣으려면 AXI adapter만 연결하는 것으로는 부족하고, 90-block packet
 계약, AAD/nonce 생성, session·sequence 검사와 zero-fill 정책을 함께 구현해야 합니다.
+
+검증 이력도 구현 시점별로 구분해야 합니다. 초기 `aes256_iterative_core`에 보존된
+직접 근거는 NIST AESAVS 405-vector VCS/Verdi KAT입니다. 독립형 폴더의 GCM
+TX/RX·TAG 변조·quarantine PASS는 이후 추가된 `gcm_tx_engine`, `gcm_rx_engine`,
+`authenticated_packet_buffer`의 4-block directed test이며, 초기 AES 코어에 대한
+GCM KAT나 최종 영상 시스템 UVM 결과를 뜻하지 않습니다.
 
 ## 실행 개요
 
@@ -395,8 +401,9 @@ run_pc_ui.bat
 
 | 계층 | 검증 내용 | 정리 시 확인 결과 |
 |---|---|---|
-| AES-256 core | NIST AESAVS ECB-256 KAT, xsim/VCS | 405/405, 0 fail |
-| Standalone reference core | NIST KAT 및 GCM TX/RX 정상·TAG 변조·평문 격리 | AES 405/405, GCM engine PASS |
+| 통합 반복형 AES core | NIST AESAVS ECB-256 KAT, VCS/Verdi | 405/405, 0 fail |
+| 후속 standalone AES core | NIST AESAVS ECB-256 KAT, xsim | 405/405, 0 fail |
+| 후속 standalone GCM engines | 4-block TX/RX, TAG 변조, 인증 전 평문 격리 directed test | GCM engine PASS |
 | C ↔ RTL | OpenSSL golden 기반 10,000개 AES-256 block | C 10,000/10,000, RTL 10,000/10,000 일치 |
 | TX UVM | ciphertext/AAD/TAG, AXI backpressure, 1280 packets | mismatch 0, protocol error 0 |
 | RX UVM | 정상·TAG/Cipher tamper·replay·sequence·session·timeout·backpressure | regression PASS |

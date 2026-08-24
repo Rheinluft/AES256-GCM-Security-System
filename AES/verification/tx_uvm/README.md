@@ -29,16 +29,12 @@ Ciphertext와 metadata 출력에 독립적인 AXI backpressure를 적용했으�
 
 ---
 
-## 2. 전달 경로
+## 2. 전달 파일
+
+현재 저장소에서 RX handoff 기준 데이터는 `vectors/`에 있습니다.
 
 ```text
-/home/hedu26/CSA/0813_aes_gcm/results
-```
-
-전달 파일:
-
-```text
-results/
+vectors/
 ├── tx_rtl_records_1280.bin
 ├── tx_rtl_aad_1280.bin
 ├── tx_rtl_ciphertext_1280.bin
@@ -47,9 +43,14 @@ results/
 ├── key.bin
 ├── iv_1280.bin
 ├── tx_rtl_manifest.txt
-├── tx_rtl_result.log
 └── README.txt
 ```
+
+UVM을 다시 실행하면 scoreboard는 같은 형식의 파일과 `tx_rtl_result.log`를
+`results/`에 생성합니다. `vectors/`는 RX 회귀 시험이 바로 사용할 수 있도록
+보존한 PASS handoff이고, 생성 로그 자체는 현재 source tree에 포함되어 있지
+않습니다. 보존된 실행 화면과 수치는 [상위 검증 문서](../README.md)에서 확인할
+수 있습니다.
 
 ---
 
@@ -336,13 +337,13 @@ tx_rtl_manifest.txt
 
 RX 검증 시작 전에 manifest와 실제 파일의 크기 및 SHA-256 일치를 확인하십시오.
 
-TX 검증 결과는 다음 파일에서 확인할 수 있습니다.
+재실행 시 TX 검증 결과는 다음 생성 파일에서 확인할 수 있습니다.
 
 ```text
-tx_rtl_result.log
+results/tx_rtl_result.log
 ```
 
-현재 결과:
+보존된 PASS 실행에서 기록된 요약:
 
 ```text
 TEST=tx_gcm_stall_test

@@ -5,8 +5,7 @@ Five checks, all must pass:
   1. every file matches tx_rtl_manifest.txt (size + SHA-256)
   2. tx_rtl_records_1280.bin really is aad|ciphertext|tag interleaved per packet
   3. AAD / nonce / plaintext follow the rules gcm_protocol_pkg.sv implements
-  4. TX RTL output is byte-identical to the independent OpenSSL reference
-     vectors in 00_1_benchmark  -> TX and RX agree on the same specification
+  4. the 8/16/1280-packet loopback inputs are exact prefixes of the TX handoff
   5. TX ciphertext+TAG authenticates and decrypts to plaintext_1280.bin under
      an independent AES-GCM implementation (python cryptography)
 
@@ -22,8 +21,8 @@ from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 ROOT = Path(__file__).resolve().parents[2]
-TX = ROOT / "02_TX_GOLDEN" / "results"
-REF = ROOT / "00_1_benchmark" / "rx_core_golden_handoff_pcam_1280_20260813"
+TX = ROOT / "tx_uvm" / "vectors"
+LOOPBACK = ROOT / "tx_rx_loopback" / "data"
 
 # Mirrors gcm_protocol_pkg.sv
 MAGIC = 0x5043414D          # "PCAM"
@@ -107,14 +106,15 @@ check("IV   == make_nonce(session, frame, index)", bad_iv == 0,
       f"{bad_iv} mismatched")
 check("plaintext == (i+j)&0xff", bad_pt == 0, f"{bad_pt} mismatched")
 
-# --- 4. TX RTL vs independent OpenSSL reference -----------------------------
-print("\n=== 4. TX RTL 출력 ↔ OpenSSL 기준 벡터 등가성 ===")
-for tx_name, ref_name in [("tx_rtl_aad_1280.bin", "aad_1280.bin"),
-                          ("tx_rtl_ciphertext_1280.bin", "ciphertext_1280.bin"),
-                          ("tx_rtl_tag_1280.bin", "tag_1280.bin")]:
-    tx_d = sha256((TX / tx_name).read_bytes()).hexdigest()
-    ref_d = sha256((REF / ref_name).read_bytes()).hexdigest()
-    check(f"{tx_name:<28} == {ref_name}", tx_d == ref_d, tx_d[:16] + "...")
+# --- 4. packaged loopback prefixes -----------------------------------------
+print("\n=== 4. TX handoff ↔ loopback 입력 prefix 정합성 ===")
+for count in (8, 16, 1280):
+    record_expected = rec_all[:count * RECORD_BYTES]
+    plain_expected = pt_all[:count * PAYLOAD_BYTES]
+    record_path = LOOPBACK / f"tx_records_{count}pkt.bin"
+    plain_path = LOOPBACK / f"tx_plain_{count}pkt.bin"
+    check(f"tx_records_{count}pkt.bin", record_path.read_bytes() == record_expected)
+    check(f"tx_plain_{count}pkt.bin", plain_path.read_bytes() == plain_expected)
 
 # --- 5. independent decryption + authentication -----------------------------
 print("\n=== 5. 독립 구현 복호 인증 (python cryptography) ===")

@@ -1,6 +1,6 @@
 #!/bin/bash
 # File-based Offline TX-RX Loopback regression.
-# Same 10 scenarios as 03, but every record is the TX RTL's own output.
+# Same 10 scenarios as RX UVM, but every record is the TX RTL's own output.
 #
 #   ./run_regression.sh            scenarios 1..8 + backpressure
 #   FULL=1 ./run_regression.sh     also runs the 1280-packet frame
@@ -15,7 +15,7 @@ if [ $? -ne 0 ]; then
   echo "TX HANDOFF VERIFICATION FAILED - see sim/tx_handoff_verify.log" | tee -a $RESULTS
   exit 1
 fi
-echo "  tx_rtl_manifest / record layout / protocol rules / OpenSSL equivalence / decrypt-auth : PASS" | tee -a $RESULTS
+echo "  manifest / record layout / protocol rules / packaged prefixes / decrypt-auth : PASS" | tee -a $RESULTS
 echo "" | tee -a $RESULTS
 
 rm -rf csrc_uvm simv_uvm simv_uvm.daidir cov_tx2rx.vdb urg_report

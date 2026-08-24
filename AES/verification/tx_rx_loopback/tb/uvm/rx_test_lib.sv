@@ -22,7 +22,7 @@ class rx_base_test extends uvm_test;
 
     if (!$value$plusargs("NPKT=%d", num_packets)) num_packets = 8;
     if (!$value$plusargs("STALL=%d", stall_pct))  stall_pct   = 0;
-    // Stimulus is the TX RTL's own verified output (02_TX_GOLDEN/results),
+    // Stimulus is the TX RTL's own verified output (tx_uvm/vectors),
     // not a PC-generated vector set: this is the TX-RX loopback configuration.
     if (!$value$plusargs("STIM=%s", stim_path))
       stim_path = $sformatf("../data/tx_records_%0dpkt.bin", num_packets);
