@@ -78,6 +78,22 @@ cd AES\verification\nist_kat\uvm_verification
 
 xsim 일부 버전은 `$fatal` 뒤에도 process exit code 0을 반환할 수 있으므로 launcher는 로그의 `RESULT : PASS`를 직접 검사합니다.
 
+### Synopsys VCS·Verdi 실행 화면
+
+아래 화면은 2026-08-13 Synopsys VCS로 `aes256_iterative_core`와
+`aes256_key_expansion`을 실행하고 Verdi에서 확인한 결과입니다. 왼쪽은 NIST
+AESAVS 4개 파일의 **405 vectors, 0 fail**과 최종 PASS를 보여주며, 오른쪽은
+`start`, `round_keys_valid`, `busy`, `done`, `data_out`의 한 블록 처리 파형을
+보여줍니다.
+
+| NIST AES-256 KAT 통과 결과 | AES-256 반복형 코어 파형 |
+|---|---|
+| ![Synopsys VCS와 Verdi에서 확인한 NIST AES-256 KAT 405개 통과 화면](../reference/original_aes256_gcm_core/verification/nist_aes256_kat/results/vcs_verdi_kat_pass_20260813.png) | ![Synopsys Verdi에서 확인한 AES-256 start busy done 및 data out 파형](../reference/original_aes256_gcm_core/verification/nist_aes256_kat/results/vcs_verdi_waveform_20260813.png) |
+
+원본 콘솔 결과는
+[`vcs_aes256_iterative_core_20260813.txt`](../reference/original_aes256_gcm_core/verification/nist_aes256_kat/results/vcs_aes256_iterative_core_20260813.txt)에
+함께 보존했습니다.
+
 ### 통과가 의미하는 것
 
 AES-256 ECB encryption과 key expansion이 표준 vector에 맞는다는 뜻입니다. GHASH, GCM nonce/AAD 조립, AXI protocol은 이 테스트 범위가 아니며 TX UVM에서 별도로 검증합니다.
