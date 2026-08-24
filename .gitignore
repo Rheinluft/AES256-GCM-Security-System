@@ -6,18 +6,85 @@
 **/*.ip_user_files/
 **/*.runs/
 **/*.sim/
+**/project/
+**/artifacts/
+**/validation/
+**/xsim.dir/
 *.jou
 *.log
 *.wdb
 *.dcp
 *.pb
 *.str
+*.bit
+*.xsa
 
-# Python
+# PetaLinux and embedded build products
+**/petalinux/build/
+**/petalinux/cache/
+**/petalinux/components/
+**/petalinux/tmp/
+**/petalinux/images/
+**/sd_card/
+BOOT.BIN
+boot.scr
+image.ub
+system.bit
+system.dtb
+*.elf
+*.o
+*.obj
+
+# HDL simulator products
+**/csrc*/
+**/*.vdb/
+**/simv*
+**/urg_report/
+**/novas_sim_*/
+*.fsdb
+ucli.key
+
+# Python and JavaScript
 **/__pycache__/
+**/.pytest_cache/
 *.py[cod]
 .venv/
 venv/
+node_modules/
+
+# Local models, runtimes and test outputs
+**/models/
+**/runtime/
+**/test-results/
+*.gguf
+*.safetensors
+
+# Locally compiled demo executables
+/AES/jetson/dashboard/bruteforce/weakkey_search
+/AES/jetson/dashboard/operator/dashboard-launcher
+/AES/jetson/dashboard/replay/replay_engine
+/AES/jetson/dashboard/tamper/tamperctl
+/AES/fpga/session_control/aes-session-agent
+/AES/fpga/session_control/test_ecdh_session_crypto
+
+# Machine-local configuration and runtime state
+pc_rx_ui.env.cmd
+live_metrics.json
+last_error.txt
+jtag_boot_status.txt
+*.pid
+
+# Archives and editable office source documents
+*.zip
+*.7z
+*.tar
+*.tar.gz
+*.tgz
+*.doc
+*.docx
+*.ppt
+*.pptx
+/AES/**/*.pdf
 
 # Office temporary files
 ~$*.docx
@@ -25,6 +92,7 @@ venv/
 ~$*.pptx
 
 # OS and editor files
+*.bak
 .DS_Store
 Thumbs.db
 Desktop.ini

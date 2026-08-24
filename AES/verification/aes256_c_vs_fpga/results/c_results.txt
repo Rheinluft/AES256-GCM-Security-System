@@ -1,0 +1,3 @@
+C_CPU_AFFINITY cpu=0
+C_KEY_INCLUDED blocks=10000 seconds=0.006202400 ns_per_block=620.240 blocks_per_second=1612279.118 gbps=0.206372 matches=10000 trials=11 checksum=095a005035ecbb53
+C_KEY_EXCLUDED blocks=10000 seconds=0.002344200 ns_per_block=234.420 blocks_per_second=4265847.620 gbps=0.546028 matches=10000 trials=11 checksum=a81ded4ba13e3d22

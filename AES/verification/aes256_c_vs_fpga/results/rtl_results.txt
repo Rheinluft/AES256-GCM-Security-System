@@ -1,0 +1,22 @@
+
+****** xsim v2025.2 (64-bit)
+  **** SW Build 6299465 on Fri Nov 14 19:35:11 GMT 2025
+  **** IP Build 6300035 on Fri Nov 14 10:48:45 MST 2025
+  **** SharedData Build 6298862 on Thu Nov 13 04:50:51 MST 2025
+  **** Start of session at: Thu Aug 13 17:59:32 2026
+    ** Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+    ** Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+
+source xsim.dir/aes256_compare_sim/xsim_script.tcl
+# xsim {aes256_compare_sim} -autoloadwcfg -runall
+Time resolution is 1 ps
+run -all
+RTL_FIPS PASS ciphertext=8ea2b7ca516745bfeafc49904b496089 key_cycles=27 block_cycles=14
+RTL_KEY_INCLUDED blocks=10000 cycles=419999 latency_cycles_sum=410000 matches=10000
+RTL_KEY_EXCLUDED blocks=10000 cycles=149999 matches=10000
+RTL_CLOCK frequency_hz=150000000 period_ns=6.666666667
+$finish called at time : 3800113284 ps : File "C:/Users/kccistc/Documents/New project/.worktrees/aes256-core-benchmark/aes256-core-benchmark/rtl/tb_aes256_compare.sv" Line 188
+run: Time (s): cpu = 00:00:00 ; elapsed = 00:00:11 . Memory (MB): peak = 219.434 ; gain = 0.000
+exit
+INFO: xsimkernel Simulation Memory Usage: 12364 KB (Peak: 12364 KB), Simulation CPU Usage: 10811 ms
+INFO: [Common 17-206] Exiting xsim at Thu Aug 13 17:59:45 2026...
