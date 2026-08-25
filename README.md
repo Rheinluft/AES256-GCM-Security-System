@@ -4,6 +4,16 @@ FPGA 기반 광통신과 암호화 영상 전송을 함께 다루는 팀 통합 
 
 이 저장소는 하드웨어에 합성되는 RTL, 임베디드 제어 소스, Jetson 공격·관찰 도구, PC 모니터링 화면과 재현 가능한 검증 코드를 소스 중심으로 보존합니다.
 
+## 기술 스택
+
+| 구분 | 기술 |
+| --- | --- |
+| RTL / FPGA | SystemVerilog, Vivado |
+| Embedded / Software | C, Python, JavaScript, PetaLinux |
+| Verification | UVM, Synopsys VCS/Verdi, Vivado xsim, OpenSSL, NIST KAT |
+| Security / Network | AES-256-GCM, X25519, HKDF-SHA256, UDP/Ethernet |
+| Hardware | Zybo Z7-20, Pcam 5C, Jetson Orin Nano, Basys 3, OV7670, STM32 NUCLEO-F411 |
+
 ## 프로젝트가 다루는 문제
 
 | 관점 | 질문 | 프로젝트의 접근 |
