@@ -62,6 +62,7 @@ Session control plane
 - 영상 packet은 `AAD 16 B + ciphertext 1440 B + TAG 16 B`로 고정하며 session/frame/packet ID로 nonce와 freshness 문맥을 구성합니다.
 - Jetson은 두 유선 NIC 사이의 투명 L2 bridge입니다. 정상 상태에서는 패킷을 통과시키고 데모 시에만 ciphertext bit 변조나 정상 packet 재주입을 수행합니다.
 - RX는 authentication 성공 전에는 plaintext를 외부로 내보내지 않습니다. 거부 packet은 zero payload로 대체하고 TAG·REPLAY·SEQUENCE·SESSION·TIMEOUT을 각각 계수합니다.
+- AES-256 코어는 OpenSSL golden 기준 C/RTL 각각 10,000/10,000개 벡터가 일치했으며, 150 MHz에서 AES 전용 명령을 배제한 scalar C 대비 최대 2.344배의 처리 성능을 확인했습니다. [검증 상세](AES/verification/README.md#2-scalar-c--openssl--rtl-비교)
 - PC 콘솔은 RX HDMI 영상, UART detector, Jetson 공격 상태를 합쳐 “공격 실행”과 “수신 차단”을 같은 타임라인에서 보여줍니다.
 
 ## 통합 데모 시나리오
