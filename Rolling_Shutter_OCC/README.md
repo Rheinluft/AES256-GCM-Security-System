@@ -186,4 +186,4 @@ Manchester 모드에서 타이밍 값이 맞아도 복조되지 않으면 노출
 
 ## 설계 보고서
 
-- [Rolling-Shutter OCC v3 기술보고서](docs/OCC_롤링셔터_v3_기술보고서.pdf)
+- [Rolling-Shutter OCC v3 기술보고서](../DOC/OCC/OCC_롤링셔터_v3_기술보고서.pdf)

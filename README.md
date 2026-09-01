@@ -112,8 +112,7 @@ Session control plane
 ## 저장소 구조
 
 ```text
-AES256-GCM-Security-System/
-├── Rolling_Shutter_OCC/   Rolling-shutter 광통신 RTL, 보드 제약과 PC 도구
+Rheinluft/
 ├── AES/
 │   ├── fpga/              Zybo TX/RX RTL, PetaLinux, 세션 제어, STM32
 │   ├── jetson/            2-NIC bridge, 공격 엔진, 보안 대시보드와 VLM 연동
@@ -121,6 +120,11 @@ AES256-GCM-Security-System/
 │   ├── verification/      NIST KAT, C/FPGA 비교, TX/RX UVM, loopback
 │   ├── reference/         독립형 AES-256-GCM 참고 코어와 검증 자료
 │   └── assets/            구조도·장비·실제 데모 화면
+├── Rolling_Shutter_OCC/   Rolling-shutter 광통신 RTL, 보드 제약과 PC 도구
+├── assets/                최상단 README 배너
+├── DOC/
+│   ├── AES_GCM/           AES·GCM 요약 자료
+│   └── OCC/               Rolling-Shutter OCC v3 기술보고서
 └── README.md              전체 설계와 통합 데모 진입점
 ```
 
@@ -135,3 +139,5 @@ AES256-GCM-Security-System/
 | [PC](AES/pc/README.md) | HDMI·UART·Jetson 상태를 결합하는 수신 콘솔과 이벤트 표시 방식 |
 | [Verification](AES/verification/README.md) | NIST KAT, C/RTL 비교, TX/RX UVM, loopback의 자극·판정 기준과 결과 화면 |
 | [Standalone AES-256-GCM Core](AES/reference/original_aes256_gcm_core/README.md) | 통합 영상 경로와 분리된 독립형 암호 코어 구조, 인터페이스와 단독 검증 결과; [최종 코어와 차이](AES/README.md#통합-코어와-독립형-참고-코어) |
+| [AES·GCM 요약 자료](DOC/AES_GCM/) | AES-256 요약, GCM 동작 모드와 GCM 요약 PDF |
+| [Rolling-Shutter OCC v3 기술보고서](DOC/OCC/OCC_롤링셔터_v3_기술보고서.pdf) | OCC v3 설계와 검증 보고서 |

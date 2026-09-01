@@ -414,3 +414,9 @@ run_pc_ui.bat
 | PC backend | UART/API/state 자체 검사 | self-test PASS |
 
 재현 명령과 각 검증의 범위는 [verification/README.md](verification/README.md)에 모았습니다.
+
+## 설계 자료
+
+- [AES-256 요약](../DOC/AES_GCM/AES_Summary.pdf)
+- [GCM 동작 모드](../DOC/AES_GCM/GCM_Mode.pdf)
+- [GCM 요약](../DOC/AES_GCM/GCM_Summary.pdf)
